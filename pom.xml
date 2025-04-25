@@ -58,6 +58,40 @@
 			<artifactId>spring-boot-starter-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>org.webjars</groupId>
+			<artifactId>sockjs-client</artifactId>
+			<version>1.5.1</version>
+		</dependency>
+		<dependency>
+			<groupId>org.webjars</groupId>
+			<artifactId>stomp-websocket</artifactId>
+			<version>2.3.4</version>
+		</dependency>
+
+		<!-- STOMP Protokolü -->
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-messaging</artifactId>
+		</dependency>
+
+		<!-- JSON İşlemleri (Opsiyonel) -->
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>io.socket</groupId>
+			<artifactId>socket.io-server</artifactId>
+			<version>4.0.1</version>
+		</dependency>
+		<dependency>
+			<groupId>io.socket</groupId>
+			<artifactId>engine.io-server</artifactId>
+			<version>6.0.1</version>
+		</dependency>
 	</dependencies>
 
 	<build>
