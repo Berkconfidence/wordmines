@@ -31,7 +31,7 @@ export const startMatchmaking = (userId: string, duration: number,
             });
 
             // Hatalar
-            client.subscribe('/user/queue/matchmaking-error', message => {
+            client.subscribe(`/user/queue/matchmaking-error`, message => {
                 const error = JSON.parse(message.body);
                 console.log('Eşleşme hatası:', error);
                 if (onError) onError(error);
