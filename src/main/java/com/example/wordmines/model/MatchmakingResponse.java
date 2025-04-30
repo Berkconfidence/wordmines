@@ -4,12 +4,15 @@ import lombok.Data;
 
 @Data
 public class MatchmakingResponse {
-    private String roomId;
-    private String opponentId;
 
-    public MatchmakingResponse(String roomId, String opponentId) {
+    private Long roomId;
+    private String opponentId;
+    private boolean isInitiator;
+
+    public MatchmakingResponse(Long roomId, String opponentId, boolean isInitiator) {
         this.roomId = roomId;
         this.opponentId = opponentId;
+        this.isInitiator = isInitiator;
     }
 
     // Getter ve setter metodları

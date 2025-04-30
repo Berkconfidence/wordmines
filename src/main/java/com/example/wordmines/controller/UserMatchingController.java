@@ -25,6 +25,7 @@ public class UserMatchingController {
     @Autowired
     private MatchmakingService matchmakingService;
 
+
     // Eşleşme araması başlatma
     @MessageMapping("/find-match")
     public void findMatch(@Payload GameOptions gameOptions, SimpMessageHeaderAccessor headerAccessor, Principal principal) {
@@ -80,13 +81,23 @@ public class UserMatchingController {
         if (matchInfo != null) {
             String matchedUserId = matchInfo.get("userId");
             String matchedPrincipalName = matchInfo.get("principalName");
-            
-            // Eşleşme bulundu, oda oluştur
-            String roomId = "room_" + System.currentTimeMillis();
 
-            // Her iki kullanıcıya da eşleşme bilgisini gönder
-            MatchmakingResponse response1 = new MatchmakingResponse(roomId, matchedUserId);
-            MatchmakingResponse response2 = new MatchmakingResponse(roomId, userId);
+            Long roomId = System.currentTimeMillis();
+
+            MatchmakingResponse response1;
+            MatchmakingResponse response2;
+
+            if(Integer.parseInt(userId)<Integer.parseInt(matchedUserId)) {
+                // Her iki kullanıcıya da eşleşme bilgisini gönder
+                response1 = new MatchmakingResponse(roomId, matchedUserId, false);
+                response2 = new MatchmakingResponse(roomId, userId, true);
+            }
+            else {
+                // Her iki kullanıcıya da eşleşme bilgisini gönder
+                response1 = new MatchmakingResponse(roomId, matchedUserId, true);
+                response2 = new MatchmakingResponse(roomId, userId, false);
+            }
+
 
             System.out.println("Principal 1: " + principalName + ", Principal 2: " + matchedPrincipalName);
             try {
@@ -97,7 +108,7 @@ public class UserMatchingController {
                 System.out.println("Mesaj gönderim hatası: " + e.getMessage());
                 e.printStackTrace();
             }
-            System.out.println("userid:" + userId + " rakipid:" + matchedUserId + " " + roomId);
+            System.out.println("userid:" + userId + " rakipid:" + matchedUserId);
 
             // Kullanıcıları kuyruktan çıkar
             matchmakingService.removeFromQueue(userId);
