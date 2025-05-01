@@ -1,8 +1,10 @@
 package com.example.wordmines.controller;
 
 
+import com.example.wordmines.dto.GameRoomDto;
 import com.example.wordmines.entity.GameRoom;
 import com.example.wordmines.entity.LetterBag;
+import com.example.wordmines.repository.GameRoomRepository;
 import com.example.wordmines.service.GameBoardService;
 import com.example.wordmines.service.GameRoomService;
 import com.example.wordmines.service.LetterService;
@@ -10,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/gameroom")
@@ -48,6 +52,16 @@ public class GameRoomController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Sunucu hatası: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/active")
+    public ResponseEntity<?> getActiveGames(@RequestParam String userId) {
+        try {
+            Long userIdLong = Long.parseLong(userId);
+            return gameRoomService.getActiveGames(userIdLong);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Geçersiz kullanıcı ID formatı");
         }
     }
 

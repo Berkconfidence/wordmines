@@ -1,7 +1,10 @@
 package com.example.wordmines.service;
 
+import com.example.wordmines.dto.GameRoomDto;
+import com.example.wordmines.entity.GameBoard;
 import com.example.wordmines.entity.GameRoom;
 import com.example.wordmines.entity.User;
+import com.example.wordmines.repository.GameBoardRepository;
 import com.example.wordmines.repository.GameRoomRepository;
 import com.example.wordmines.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,7 +12,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class GameRoomService {
@@ -19,6 +24,9 @@ public class GameRoomService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private GameBoardRepository gameBoardRepository;
 
 
     public GameRoom createRoom(Long roomId, Long userId, Long opponentId, String duration) {
@@ -42,4 +50,28 @@ public class GameRoomService {
         System.out.println("3");
         return gameRoomRepository.save(room);
     }
+
+    public ResponseEntity<List<GameRoomDto>> getActiveGames(Long userId) {
+        List<GameRoom> activeGames = gameRoomRepository
+                .findByStatusAndPlayer(userId, GameRoom.GameStatus.ACTIVE);
+
+        List<GameRoomDto> activeGamesDto = activeGames.stream().
+                map(game -> {
+                    GameRoomDto dto = new GameRoomDto();
+                    dto.setRoomId(game.getRoomId());
+                    dto.setPlayer1Id(game.getPlayer1().getId());
+                    dto.setPlayer2Id(game.getPlayer2().getId());
+                    dto.setGameDuration(game.getGameDuration());
+                    dto.setCreatedAt(game.getCreatedAt());
+                    dto.setFinishedAt(game.getFinishedAt());
+
+                    Optional<GameBoard> board = gameBoardRepository.findByRoom(game);
+                    dto.setCurrentTurn(board.get().getCurrentTurn().getId());
+                    return dto;
+                })
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(activeGamesDto);
+    }
+
 }
