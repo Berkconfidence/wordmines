@@ -49,10 +49,5 @@ public class LetterController {
     }
 
 
-
-    @GetMapping("/deneme")
-    public void deneme() {
-        System.out.println("merhaba");
-    }
 }
 

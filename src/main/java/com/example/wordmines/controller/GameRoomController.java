@@ -1,32 +1,36 @@
 package com.example.wordmines.controller;
 
 
-import com.example.wordmines.dto.GameRoomDto;
 import com.example.wordmines.entity.GameRoom;
 import com.example.wordmines.entity.LetterBag;
+import com.example.wordmines.entity.PlayerScore;
+import com.example.wordmines.entity.User;
 import com.example.wordmines.repository.GameRoomRepository;
+import com.example.wordmines.repository.LetterBagRepository;
+import com.example.wordmines.repository.PlayerScoreRepository;
 import com.example.wordmines.service.GameBoardService;
 import com.example.wordmines.service.GameRoomService;
 import com.example.wordmines.service.LetterService;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
+@RequiredArgsConstructor
 @RequestMapping("/gameroom")
 public class GameRoomController {
 
-    @Autowired
-    private GameRoomService gameRoomService;
 
-    @Autowired
-    private GameBoardService gameBoardService;
-
-    @Autowired
-    private LetterService letterService;
+    private final GameRoomService gameRoomService;
+    private final GameBoardService gameBoardService;
+    private final LetterService letterService;
+    private final GameRoomRepository gameRoomRepository;
+    private final PlayerScoreRepository playerScoreRepository;
+    private final LetterBagRepository letterBagRepository;
 
     @PostMapping("/create")
     public ResponseEntity<?> createRoom(@RequestParam Long roomId, @RequestParam String userId,
@@ -63,6 +67,45 @@ public class GameRoomController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Geçersiz kullanıcı ID formatı");
         }
+    }
+
+    @GetMapping("/status")
+    public ResponseEntity<?> getRoomStatus(@RequestParam Long roomId) {
+        GameRoom room = gameRoomRepository.findById(roomId).orElse(null);
+        if (room == null) return ResponseEntity.notFound().build();
+
+        User player1 = room.getPlayer1();
+        User player2 = room.getPlayer2();
+
+        // Player 1 skoru
+        int player1Score = playerScoreRepository.findByUserAndRoom(player1, room)
+                .map(PlayerScore::getScore)
+                .orElse(0);
+
+        // Player 2 skoru
+        int player2Score = playerScoreRepository.findByUserAndRoom(player2, room)
+                .map(PlayerScore::getScore)
+                .orElse(0);
+
+        // Kalan harf sayısı (oyundaki torbada kalan harfler)
+        int remainingLetters = letterBagRepository.findByRoom(room)
+                .map(bag -> bag.getRemainingLetters().values().stream().mapToInt(Integer::intValue).sum())
+                .orElse(0);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("player1", Map.of(
+                "username", player1.getUsername(),
+                "score", player1Score
+        ));
+        result.put("player2", Map.of(
+                "username", player2.getUsername(),
+                "score", player2Score
+        ));
+        result.put("remainingLetters", remainingLetters);
+
+        System.out.println("kalan harf: "+remainingLetters);
+
+        return ResponseEntity.ok(result);
     }
 
 

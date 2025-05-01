@@ -7,10 +7,7 @@ import com.example.wordmines.repository.PlayerLettersRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -84,6 +81,13 @@ public class LetterService {
         }
 
         return hand;
+    }
+
+    public int getPointForLetter(String letter) {
+        String normalized = letter.toUpperCase(new Locale("tr", "TR"));
+        return letterPoolRepository.findByLetter(normalized)
+                .map(LetterPool::getPoint)
+                .orElse(0);
     }
 }
 

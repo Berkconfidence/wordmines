@@ -8,10 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -21,9 +19,10 @@ public class GameBoardService {
     private final BoardInitializer boardInitializer;
     private final GameRoomRepository gameRoomRepository;
     private final PlayerLettersRepository playerLettersRepository;
-    private final UserRepository userRepository;
     private final LetterBagRepository letterBagRepository;
     private final LetterService letterService;
+    private final PlayerScoreRepository playerScoreRepository;
+    private final MoveHistoryRepository moveHistoryRepository;
 
     // Yeni tahta oluşturma (Artık matrisi otomatik oluşturuyor)
     public void createNewBoard(GameRoom room, User firstPlayer) {
@@ -34,60 +33,13 @@ public class GameBoardService {
         gameBoardRepository.save(board);
     }
 
-    // ID ile tahta getirme
-    public GameBoard getBoardById(Long boardId) {
-        return gameBoardRepository.findById(boardId)
-                .orElseThrow(() -> new RuntimeException("Board not found!"));
-    }
-
-    @Transactional
-    public void playMove(Long userId, Long roomId, List<String> usedLetters) {
-        GameRoom room = gameRoomRepository.findById(roomId).orElseThrow();
-        GameBoard board = gameBoardRepository.findByRoom(room).orElseThrow();
-
-        if (!board.getCurrentTurn().getId().equals(userId)) {
-            throw new IllegalStateException("Sıra sizde değil.");
-        }
-        Optional<User> userOpt = userRepository.findById(userId);
-        PlayerLetters playerLetters = playerLettersRepository.findByUserAndRoom(userOpt.get(), room)
-                .orElseThrow();
-
-        // 1. Kullanılan harfleri düş
-        List<String> currentLetters = new ArrayList<>(playerLetters.getLetters());
-        for (String letter : usedLetters) {
-            currentLetters.remove(letter);
-        }
-
-        // 2. Eksik harf kadar letterBag'den yeni harf çek
-        LetterBag bag = letterBagRepository.findByRoom(room).orElseThrow();
-        Map<String, Integer> pool = bag.getRemainingLetters();
-
-        int newLetterCount = 7 - currentLetters.size();
-        List<String> newLetters = letterService.drawRandomLetters(pool, newLetterCount);
-        currentLetters.addAll(newLetters);
-
-        // 3. Güncellemeleri kaydet
-        playerLetters.setLetters(currentLetters);
-        bag.setRemainingLetters(pool);
-
-        playerLettersRepository.save(playerLetters);
-        letterBagRepository.save(bag);
-
-        // 4. Sırayı değiştir
-        User nextTurn = room.getPlayer1().getId().equals(userId)
-                ? room.getPlayer2()
-                : room.getPlayer1();
-
-        board.setCurrentTurn(nextTurn);
-        gameBoardRepository.save(board);
-    }
 
     @Transactional
     public void processMove(Long roomId, List<PlacedLetterDto> moves) {
         GameRoom room = gameRoomRepository.findById(roomId).orElseThrow();
         GameBoard board = gameBoardRepository.findByRoom(room).orElseThrow();
-
         User currentUser = board.getCurrentTurn();
+
         PlayerLetters playerLetters = playerLettersRepository
                 .findByUserAndRoom(currentUser, room)
                 .orElseThrow();
@@ -107,6 +59,34 @@ public class GameBoardService {
             cell.setLetter(dto.getLetter());
         }
 
+        // 3. Skoru hesapla
+        int baseScore = calculateScore(moves,matrix);
+
+        // 4. PlayerScore güncelle
+        PlayerScore score = playerScoreRepository.findByUserAndRoom(currentUser, room)
+                .orElseGet(() -> {
+                    PlayerScore ps = new PlayerScore();
+                    ps.setRoom(room);
+                    ps.setUser(currentUser);
+                    ps.setScore(0);
+                    return ps;
+                });
+        score.setScore(score.getScore() + baseScore);
+        playerScoreRepository.save(score);
+
+        // 5. MoveHistory kaydet
+        String word = moves.stream().map(PlacedLetterDto::getLetter).collect(Collectors.joining());
+        MoveHistory history = new MoveHistory();
+        history.setRoom(room);
+        history.setUser(currentUser);
+        history.setWord(word);
+        history.setBaseScore(baseScore);
+        history.setFinalScore(baseScore); // Şimdilik aynı
+        history.setPlayedAt(new Date());
+        history.setTurnNumber(moveHistoryRepository.countByRoom(room) + 1);
+
+        moveHistoryRepository.save(history);
+
         // 3. Eksik harfleri tamamla
         int eksik = 7 - current.size();
         LetterBag bag = letterBagRepository.findByRoom(room).orElseThrow();
@@ -122,6 +102,37 @@ public class GameBoardService {
         gameBoardRepository.save(board);
         board.setCurrentTurn(next);
     }
+
+    public int calculateScore(List<PlacedLetterDto> moves, List<List<GameBoard.Cell>> matrix) {
+        int totalLetterScore = 0;
+        int wordMultiplier = 1;
+
+        for (PlacedLetterDto move : moves) {
+            int r = move.getPosition().getRow();
+            int c = move.getPosition().getCol();
+            GameBoard.Cell cell = matrix.get(r).get(c);
+
+            int baseLetterScore = letterService.getPointForLetter(move.getLetter());
+            int letterScore = baseLetterScore;
+
+            // multiplier varsa uygula
+            String multiplier = cell.getMultiplier();
+            if (multiplier != null) {
+                if (multiplier.startsWith("letter*")) {
+                    int factor = Integer.parseInt(multiplier.substring(7));
+                    letterScore *= factor;
+                } else if (multiplier.startsWith("word*")) {
+                    int factor = Integer.parseInt(multiplier.substring(5));
+                    wordMultiplier *= factor;
+                }
+            }
+
+            totalLetterScore += letterScore;
+        }
+
+        return totalLetterScore * wordMultiplier;
+    }
+
 
 
 }

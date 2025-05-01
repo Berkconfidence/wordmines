@@ -39,7 +39,7 @@ public class GameBoard {
     // Hücre yapısını tanımlayan iç sınıf
     @Data
     public static class Cell {
-        private String type; // "normal", "word*3", "letter*2", "mine", "reward"
+        private String type;
         private String letter; // Oynanan harf (boşsa "")
         private String multiplier; // "word*3", "letter*2" vb.
         private boolean isMineActive; // Mayın tetiklendi mi?

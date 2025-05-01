@@ -12,14 +12,13 @@ public class LetterPool {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String letter;     // Örn: "A", "Ç", "Ü"
+    @Column(nullable = false, unique = true, columnDefinition = "VARCHAR(5) COLLATE utf8mb4_turkish_ci")
+    private String letter;
 
     @Column(nullable = false)
-    private int point;         // Harf puanı
+    private int point; // Harf puanı
 
     @Column(nullable = false)
-    private int quantity;      // Toplam kaç tane var
-
+    private int quantity; // Toplam kaç tane var
 
 }
