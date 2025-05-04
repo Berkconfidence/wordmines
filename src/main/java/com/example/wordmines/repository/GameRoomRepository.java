@@ -1,6 +1,7 @@
 package com.example.wordmines.repository;
 
 import com.example.wordmines.entity.GameRoom;
+import com.example.wordmines.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,4 +19,7 @@ public interface GameRoomRepository extends JpaRepository<GameRoom, Long> {
     """)
     List<GameRoom> findByStatusAndPlayer(@Param("userId") Long userId,
                                          @Param("status") GameRoom.GameStatus status);
+
+    long countByWinner(User user);
+    long countByPlayer1OrPlayer2(User player1, User player2);
 }

@@ -74,4 +74,32 @@ public class GameRoomService {
         return ResponseEntity.ok(activeGamesDto);
     }
 
+    public ResponseEntity<List<GameRoomDto>> getFinishedGames(Long userId) {
+        List<GameRoom> finishedGame = gameRoomRepository
+                .findByStatusAndPlayer(userId, GameRoom.GameStatus.FINISHED);
+
+        List<GameRoomDto> finishedGamesDto = finishedGame.stream()
+                .map(game -> {
+                    GameRoomDto dto = new GameRoomDto();
+                    try {
+                        dto.setRoomId(game.getRoomId());
+                        dto.setPlayer1Id(game.getPlayer1() != null ? game.getPlayer1().getId() : null);
+                        dto.setPlayer2Id(game.getPlayer2() != null ? game.getPlayer2().getId() : null);
+                        dto.setGameDuration(game.getGameDuration());
+                        dto.setCreatedAt(game.getCreatedAt());
+                        dto.setFinishedAt(game.getFinishedAt());
+                        dto.setWinnerId(game.getWinner().getId());
+                        Optional<GameBoard> board = gameBoardRepository.findByRoom(game);
+                        dto.setCurrentTurn(board.map(b -> b.getCurrentTurn().getId()).orElse(null));
+                    } catch (Exception e) {
+                        System.out.println("Hata oluştu: " + e.getMessage());
+                        e.printStackTrace();
+                    }
+                    return dto;
+                })
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(finishedGamesDto);
+    }
+
 }

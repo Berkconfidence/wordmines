@@ -34,6 +34,10 @@ public class GameRoom {
     @Temporal(TemporalType.TIMESTAMP)
     private Date finishedAt;
 
+    @ManyToOne
+    @JoinColumn(name = "winner_id")
+    private User winner;
+
     public enum GameStatus {
         WAITING,
         ACTIVE,

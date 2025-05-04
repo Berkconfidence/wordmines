@@ -16,5 +16,6 @@ public class GameRoomDto {
     private int player1Score;
     private int player2Score;
     private Long currentTurn;
+    private Long winnerId;
 
 }
