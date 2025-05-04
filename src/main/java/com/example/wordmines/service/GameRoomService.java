@@ -33,12 +33,10 @@ public class GameRoomService {
 
         Optional<User> user1 = userRepository.findById(userId);
         Optional<User> user2 = userRepository.findById(opponentId);
-        System.out.println("1");
 
         if(user1.isEmpty() || user2.isEmpty() || duration == null)
             throw new IllegalArgumentException("Bilgiler eksik");
 
-        System.out.println("2");
         GameRoom room = new GameRoom();
         room.setRoomId(roomId);
         room.setPlayer1(user1.get());
@@ -47,7 +45,6 @@ public class GameRoomService {
         room.setStatus(GameRoom.GameStatus.ACTIVE);
         room.setCreatedAt(new Date());
 
-        System.out.println("3");
         return gameRoomRepository.save(room);
     }
 
@@ -55,22 +52,25 @@ public class GameRoomService {
         List<GameRoom> activeGames = gameRoomRepository
                 .findByStatusAndPlayer(userId, GameRoom.GameStatus.ACTIVE);
 
-        List<GameRoomDto> activeGamesDto = activeGames.stream().
-                map(game -> {
+        List<GameRoomDto> activeGamesDto = activeGames.stream()
+                .map(game -> {
                     GameRoomDto dto = new GameRoomDto();
-                    dto.setRoomId(game.getRoomId());
-                    dto.setPlayer1Id(game.getPlayer1().getId());
-                    dto.setPlayer2Id(game.getPlayer2().getId());
-                    dto.setGameDuration(game.getGameDuration());
-                    dto.setCreatedAt(game.getCreatedAt());
-                    dto.setFinishedAt(game.getFinishedAt());
-
-                    Optional<GameBoard> board = gameBoardRepository.findByRoom(game);
-                    dto.setCurrentTurn(board.get().getCurrentTurn().getId());
+                    try {
+                        dto.setRoomId(game.getRoomId());
+                        dto.setPlayer1Id(game.getPlayer1() != null ? game.getPlayer1().getId() : null);
+                        dto.setPlayer2Id(game.getPlayer2() != null ? game.getPlayer2().getId() : null);
+                        dto.setGameDuration(game.getGameDuration());
+                        dto.setCreatedAt(game.getCreatedAt());
+                        dto.setFinishedAt(game.getFinishedAt());
+                        Optional<GameBoard> board = gameBoardRepository.findByRoom(game);
+                        dto.setCurrentTurn(board.map(b -> b.getCurrentTurn().getId()).orElse(null));
+                    } catch (Exception e) {
+                        System.out.println("Hata oluştu: " + e.getMessage());
+                        e.printStackTrace();
+                    }
                     return dto;
                 })
                 .collect(Collectors.toList());
-
         return ResponseEntity.ok(activeGamesDto);
     }
 

@@ -36,7 +36,6 @@ public class LetterController {
         if (userOpt.isEmpty() || roomOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Kullanıcı veya Oda bulunamadı");
         }
-        System.out.println("User: "+userOpt.get()+" "+"room: "+roomOpt.get());
 
         Optional<PlayerLetters> playerLetters = playerLettersRepository
                 .findByUserAndRoom(userOpt.get(), roomOpt.get());
@@ -47,6 +46,8 @@ public class LetterController {
 
         return ResponseEntity.ok(playerLetters.get().getLetters());
     }
+
+
 
 
 }

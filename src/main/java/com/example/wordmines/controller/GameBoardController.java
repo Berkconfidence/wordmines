@@ -14,8 +14,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -56,6 +59,21 @@ public class GameBoardController {
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Tahta bulunamadı");
         }
+    }
+
+    @GetMapping("/moveinfo")
+    public ResponseEntity<Map<String, Object>> getMoveInfo(@RequestParam Long roomId) {
+        GameRoom room = gameRoomRepository.findById(roomId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Room not found"));
+
+        GameBoard board = gameBoardRepository.findByRoom(room)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Board not found"));
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("lastMoveAt", board.getLastMoveAt());
+        response.put("isFirstMove", board.isFirstMove());
+
+        return ResponseEntity.ok(response);
     }
 
     @MessageMapping("/move")

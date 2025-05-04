@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.util.Date;
 import java.util.List;
 
 @Entity
@@ -31,10 +32,17 @@ public class GameBoard {
     @Column(name = "remaining_letters", columnDefinition = "INT DEFAULT 86")
     private Integer remainingLetters = 86;
 
+    @Temporal(TemporalType.TIMESTAMP)
+    private Date lastMoveAt;
+
+    @Column(name = "firs_move")
+    private boolean isFirstMove = true;
+
     // Yeni: Matrisi daha yapılandırılmış şekilde saklamak için
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "matrix_state", columnDefinition = "JSON")
     private List<List<Cell>> matrixState;
+
 
     // Hücre yapısını tanımlayan iç sınıf
     @Data

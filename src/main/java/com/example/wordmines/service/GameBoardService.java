@@ -24,11 +24,17 @@ public class GameBoardService {
     private final PlayerScoreRepository playerScoreRepository;
     private final MoveHistoryRepository moveHistoryRepository;
 
-    // Yeni tahta oluşturma (Artık matrisi otomatik oluşturuyor)
-    public void createNewBoard(GameRoom room, User firstPlayer) {
+
+    public void createNewBoard(GameRoom room, User firstPlayer, User secondPlayer) {
         GameBoard board = new GameBoard();
         board.setRoom(room);
-        board.setCurrentTurn(firstPlayer);
+
+        User currentTurn = new Random().nextBoolean() ? firstPlayer : secondPlayer;
+        board.setCurrentTurn(currentTurn);
+
+        board.setLastMoveAt(new Date()); // Oyunun oluşturulduğu an
+        board.setFirstMove(true);
+
         board.setMatrixState(boardInitializer.createInitialBoard());
         gameBoardRepository.save(board);
     }
@@ -39,6 +45,16 @@ public class GameBoardService {
         GameRoom room = gameRoomRepository.findById(roomId).orElseThrow();
         GameBoard board = gameBoardRepository.findByRoom(room).orElseThrow();
         User currentUser = board.getCurrentTurn();
+
+        // Zaman kontrolü
+        long now = System.currentTimeMillis();
+        long lastMove = board.getLastMoveAt().getTime();
+        long diffMinutes = (now - lastMove) / (60 * 1000);
+
+        int limit = board.isFirstMove() ? 60 : Integer.parseInt(room.getGameDuration()); // ilk hamle 60 dk
+        if (diffMinutes > limit) {
+            throw new IllegalStateException("Süre dolmuş, hamle yapılamaz.");
+        }
 
         PlayerLetters playerLetters = playerLettersRepository
                 .findByUserAndRoom(currentUser, room)
@@ -60,7 +76,7 @@ public class GameBoardService {
         }
 
         // 3. Skoru hesapla
-        int baseScore = calculateScore(moves,matrix);
+        int baseScore = calculateScore(moves, matrix);
 
         // 4. PlayerScore güncelle
         PlayerScore score = playerScoreRepository.findByUserAndRoom(currentUser, room)
@@ -84,24 +100,28 @@ public class GameBoardService {
         history.setFinalScore(baseScore); // Şimdilik aynı
         history.setPlayedAt(new Date());
         history.setTurnNumber(moveHistoryRepository.countByRoom(room) + 1);
-
         moveHistoryRepository.save(history);
 
-        // 3. Eksik harfleri tamamla
+        // 6. Eksik harfleri tamamla
         int eksik = 7 - current.size();
         LetterBag bag = letterBagRepository.findByRoom(room).orElseThrow();
         List<String> yeniler = letterService.drawRandomLetters(bag.getRemainingLetters(), eksik);
         current.addAll(yeniler);
-
-        // 4. Sırayı değiştir
-        User next = currentUser.getId().equals(room.getPlayer1().getId())
-                ? room.getPlayer2() : room.getPlayer1();
-
         playerLetters.setLetters(current);
         playerLettersRepository.save(playerLetters);
-        gameBoardRepository.save(board);
+
+        // 7. Sırayı değiştir
+        User next = currentUser.getId().equals(room.getPlayer1().getId())
+                ? room.getPlayer2() : room.getPlayer1();
         board.setCurrentTurn(next);
+
+        // 8. Süre güncelle
+        board.setLastMoveAt(new Date());
+        board.setFirstMove(false);
+
+        gameBoardRepository.save(board);
     }
+
 
     public int calculateScore(List<PlacedLetterDto> moves, List<List<GameBoard.Cell>> matrix) {
         int totalLetterScore = 0;

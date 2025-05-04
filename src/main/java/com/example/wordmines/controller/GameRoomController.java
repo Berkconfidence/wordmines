@@ -44,8 +44,7 @@ public class GameRoomController {
             if (room == null) {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Kullanıcı adı veya şifre hatalı");
             } else {
-                System.out.println("4");
-                gameBoardService.createNewBoard(room, room.getPlayer1());
+                gameBoardService.createNewBoard(room, room.getPlayer1(), room.getPlayer2());
                 LetterBag bag = letterService.createLetterBag(room);
                 letterService.assignInitialLetters(room, room.getPlayer1(), bag);
                 letterService.assignInitialLetters(room, room.getPlayer2(), bag);
